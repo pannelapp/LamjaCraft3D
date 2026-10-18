@@ -1,0 +1,61 @@
+function nativeProjectVersion(includeGuides=true,surfaceObjects=objects.some(o=>o.kind==='surface'),shinyObjects=objects.some(o=>objectShininess(o)>0)):7|8|9|10{return shinyObjects?10:surfaceObjects?9:includeGuides&&guides.some(g=>g.kind==='plane'&&g.surface)?8:7;}
+function projectData():ProjectData{return {...(buildPlates.length?{references:{buildPlates:buildPlates.map(cloneBuildPlate)}}:{}),format:'lamjacraft-3d',version:nativeProjectVersion(),units:'mm',name:String($('projectName').value||'LamjaCraft 3D'),objects:objects.map(serializeProjectObject),groups:groups.map(serializeGroup),construction:{guides:guides.map(serializeGuide)},annotations:{dimensions:dimensions.map(serializeDimension)}};}
+// Format 7 keeps one legacy identifier readable so existing alpha.44 project files survive the rebrand.
+function finishProjectValidation(data:any,loaded:ModelObject[]):{name:string;objects:ModelObject[];groups:ObjectGroup[];guides:ConstructionGuide[];dimensions:DimensionAnnotation[];buildPlates:BuildPlate[]}{validateProjectHeader(data);const rawGroups=Array.isArray(data.groups)?data.groups:[],rawDimensions=Array.isArray(data.annotations?.dimensions)?data.annotations.dimensions:[];if(data.objects.length!==loaded.length)throw Error('The project reader returned an incomplete object list.');const seen=new Set<string>();for(const o of loaded){if(seen.has(o.id))throw Error(`Duplicate object ID ${o.id}.`);seen.add(o.id);}const groupSeen=new Set<string>(),groupedObjects=new Set<string>(),loadedGroups=rawGroups.map((g:any)=>deserializeGroup(g));for(const g of loadedGroups){if(groupSeen.has(g.id))throw Error(`Duplicate group ID ${g.id}.`);groupSeen.add(g.id);for(const id of g.objectIds){if(!seen.has(id))throw Error(`Group ${g.id} references missing object ${id}.`);if(groupedObjects.has(id))throw Error(`Object ${id} belongs to more than one group.`);groupedObjects.add(id);}}if(data.version<10&&data.objects.some((item:any)=>item?.shininess!==undefined))throw Error('Object shininess requires native project format 10.');if(data.version<9&&data.objects.some((item:any)=>item?.kind==='surface'))throw Error('Open surface objects require native project format 9.');if(data.version===7&&data.construction.guides.some((g:unknown)=>!!g&&typeof g==='object'&&'surface' in g))throw Error('Curved split surfaces require project format 8.');const guideSeen=new Set<string>(),loadedGuides=data.construction.guides.map((g:any)=>deserializeGuide(g));for(const g of loadedGuides){if(guideSeen.has(g.id))throw Error(`Duplicate guide ID ${g.id}.`);guideSeen.add(g.id);}const dimSeen=new Set<string>(),loadedDimensions=rawDimensions.map((d:any)=>deserializeDimension(d));for(const d of loadedDimensions){if(dimSeen.has(d.id))throw Error(`Duplicate dimension ID ${d.id}.`);dimSeen.add(d.id);}const loadedPlates=projectBuildPlates(data.references);return {buildPlates:loadedPlates,name:String(data.name||'Imported project').slice(0,80),objects:loaded,groups:loadedGroups,guides:loadedGuides,dimensions:loadedDimensions};}
+function validateProject(data:any){validateProjectHeader(data);return finishProjectValidation(data,data.objects.map(validateProjectObject));}
+function loadProject(data:any){const p=validateProject(data);cancelGesture();resetObjectListView();replaceDocumentContents(p.name,p.objects,p.guides,p.dimensions,'load-project','Open project',false,p.groups,p.buildPlates);setTool('select');fit();}
+function filename(){return (String($('projectName').value).trim()||'model').replace(/[<>:"/\\|?*\x00-\x1f]/g,'-').slice(0,80);}
+function download(blob:Blob,name:string){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+function saveProject(){try{assertSplitSurfacePreviewFinished();}catch(error){toast(errorMessage(error));return;}download(new Blob([JSON.stringify(projectData(),null,2)],{type:'application/json'}),filename()+'.lamjacraft.json');setDirtyState(false);$('saveStatus').textContent='Project downloaded';toast(`LamjaCraft 3D project saved as format ${nativeProjectVersion()}.`);}
+$('fileInput').onchange=async(event:Event)=>{const input=event.target as HTMLInputElement,file=input.files?.[0];input.value='';if(file)await openNativeProjectFile(file);};
+function binarySTL(list:ModelObject[]):ArrayBuffer{return geometryApi.exportSTL(list);}
+function yieldSTLExport():Promise<void>{return new Promise(resolve=>setTimeout(resolve,0));}
+async function binarySTLAsync(list:ModelObject[],report:(progress:number,message:string)=>void,isCancelled:()=>boolean,registerCancel?:(cancel:()=>void)=>void):Promise<ArrayBuffer>{
+  // Paint the progress dialog before structured-cloning the read-only worker request.
+  await yieldSTLExport();
+  if(isCancelled())throw Error('STL export cancelled.');
+  const job=geometryApi.exportSTLAsync(list,update=>report(update.progress,update.message));
+  registerCancel?.(()=>job.cancel());
+  if(isCancelled())job.cancel();
+  return job.promise;
+}
+function exportObjects():ModelObject[]{if($('exportScope').value!=='selected')return [...objects];const selected=new Set(selectedObjectIds());return objects.filter(object=>selected.has(object.id));}
+function exchangeFormat():ExportFormat{const value=$('exportFormat').value;return value==='lamjacraft'||value==='obj'||value==='step'||value==='png'?value:'stl';}
+function clearExportFeedback(){$('exportError').textContent='';$('exportError').classList.add('hidden');}
+function showExportError(message:string){$('exportError').textContent='Export failed: '+message;$('exportError').classList.remove('hidden');}
+function exportSummary(){
+  clearExportFeedback();const list=exportObjects(),format=exchangeFormat();
+  $('pngExportOptions').classList.toggle('hidden',format!=='png');($('exportDialog') as HTMLDialogElement).classList.toggle('png-export-dialog',format==='png');
+  const scope=$('exportScope') as HTMLSelectElement;if(scope.options?.[0])scope.options[0].textContent=format==='png'?'Visible objects':'Entire model';if(scope.options?.[1])scope.options[1].textContent=format==='png'?'Selected visible objects / group':'Selected objects / group';
+  if(format==='png'){updatePngExportSummary();return;}invalidatePngPreview();
+  $('downloadSTL').textContent=format==='lamjacraft'?'Download LamjaCraft JSON':format==='obj'?'Download OBJ package':`Download ${format.toUpperCase()}`;
+  $('exportFormatNote').textContent=format==='lamjacraft'?`Editable LamjaCraft format ${nativeProjectVersion($('exportScope').value!=='selected',list.some(o=>o.kind==='surface'),list.some(o=>objectShininess(o)>0))} (.lamjacraft.json), preserving canonical geometry, colors, shininess, transforms and visibility. Selected exports retain groups with at least two included members and object-linked dimensions whose object anchors are all included; unrelated guides and build plates are omitted. Entire model includes all project references. Use Import to add the file or Open to replace a project.`:format==='step'?'STEP with closed polyhedral solids and millimetre units. Planar faces and holes are preserved; curved shapes remain faceted. Feature history and colours are not included.':format==='obj'?'A ZIP containing model.obj and model.mtl, with separate objects, flat normals and object colours. Extract both files into the same folder before import. Coordinates are mm; in Blender use import Scale 0.001 for a metre-based scene.':'Binary STL with coordinates in millimetres, ready to open in a slicer. STL has no units or colours; check scale and printability before printing.';
+  $('downloadSTL').disabled=!list.length;
+  if(!list.length){$('exportSummary').textContent='Select one or more objects first.';$('belowPlane').textContent='';return;}
+  try{
+    if(format!=='lamjacraft'&&list.some(o=>o.kind==='surface'))throw Error('Open surface objects cannot be exported to closed-solid formats. Select only solids or export the native LamjaCraft project.');
+    const previews=list.map(object=>object.kind==='surface'?{
+      faces:object.solid.faces.size,triangles:sceneGeometry.mesh(object).triangles.length,bounds:sceneGeometry.entry(object).bounds
+    }:geometryApi.exportPreview(object)),count=previews.reduce((sum,p)=>sum+(format==='step'||format==='lamjacraft'?p.faces:p.triangles),0),bounds:Bounds3={min:[Infinity,Infinity,Infinity],max:[-Infinity,-Infinity,-Infinity]};
+    for(const p of previews)for(let axis=0;axis<3;axis++){bounds.min[axis]=Math.min(bounds.min[axis],p.bounds.min[axis]);bounds.max[axis]=Math.max(bounds.max[axis],p.bounds.max[axis]);}const size=V.sub(bounds.max,bounds.min);$('exportSummary').textContent=`${list.length} object${list.length===1?'':'s'} · ${format==='step'||format==='lamjacraft'?'':'approximately '}${count.toLocaleString('en-US')} ${format==='step'||format==='lamjacraft'?'faces':'triangles'} · ${size.map(fmt).join(' × ')} mm`;$('belowPlane').textContent=bounds.min[2]<-.001?'Note: The model extends below Z = 0.':'Lowest point: Z = '+fmt(bounds.min[2])+' mm.';}catch(error){$('downloadSTL').disabled=true;$('exportSummary').textContent='The export preview could not be prepared.';$('belowPlane').textContent='';showExportError(errorMessage(error));}
+}
+async function downloadExchange(){
+  if(modelingOperationBusy)return;
+  if(exchangeFormat()==='png'){await downloadPngImage();return;}
+  const list=exportObjects().map(object=>({...object,transform:structuredClone(object.transform)})),format=exchangeFormat(),baseName=filename(),label=format==='lamjacraft'?'LamjaCraft':format.toUpperCase();if(!list.length)return;
+  if(format!=='lamjacraft'&&list.some(o=>o.kind==='surface')){showExportError('Open surfaces can only be exported in the native LamjaCraft format. Select solid objects to export other formats.');return;}
+  const nativeSnapshot=format==='lamjacraft'?snapshotNativeExport(list,$('exportScope').value==='selected'):null;
+  // Solids are immutable document replacements. Snapshot names/colours/transforms and the
+  // source-solid references before yielding, without cloning or changing canonical geometry.
+  clearExportFeedback();$('exportDialog').close();let cancelled=false,cancelWorker:(()=>void)|null=null;
+  beginModelingOperation(`Preparing ${label} export…`,{progress:0,onCancel:()=>{cancelled=true;cancelWorker?.();}});
+  const control:ExchangeControl={report:(progress,message)=>updateModelingOperation(progress,message),isCancelled:()=>cancelled};
+  try{
+    const blob=nativeSnapshot?await nativeProjectFileAsync(nativeSnapshot,control):format==='stl'?new Blob([await binarySTLAsync(list,control.report,control.isCancelled,cancel=>{cancelWorker=cancel;})],{type:'model/stl'}):format==='obj'?await objPackageAsync(list,control):await stepFileAsync(list,baseName+'.step',control);
+    if(cancelled)return;download(blob,baseName+(format==='lamjacraft'?'.lamjacraft.json':format==='obj'?'-obj.zip':'.'+format));$('saveStatus').textContent=label+' exported';toast(label+(format==='obj'?' package':'')+' downloaded successfully.');
+  }catch(error){if(cancelled||error instanceof ExportCancelledError||errorMessage(error)==='STL export cancelled.'){toast(label+' export cancelled. No file was downloaded.');return;}showExportError(errorMessage(error));const dialog=$('exportDialog') as HTMLDialogElement;if(!dialog.open)dialog.showModal();}
+  finally{endModelingOperation();}
+}
+$('exportScope').onchange=exportSummary;$('exportFormat').onchange=exportSummary;$('downloadSTL').onclick=()=>{void downloadExchange();};$('exportBtn').onclick=()=>{exportSummary();$('exportDialog').showModal();};
+$('saveBtn').onclick=()=>{if(!modelingOperationBusy)saveProject();};$('openBtn').onclick=()=>{if(!modelingOperationBusy)$('fileInput').click();};$('newBtn').onclick=()=>{if(modelingOperationBusy)return;if((objects.length||buildPlates.length)&&!confirm('Start an empty project?'))return;cancelGesture();clearImportSession();if($('importDialog').open)$('importDialog').close();resetObjectListView();replaceDocumentContents('Untitled',[],[],[],'new-project','New project',false);setTool('select');camera.target=[0,0,0];camera.distance=155;setView('iso');};
+window.addEventListener('beforeunload',(e:any)=>{if(dirty){e.preventDefault();e.returnValue='';}});
