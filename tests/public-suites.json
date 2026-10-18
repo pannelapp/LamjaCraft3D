@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "applicationVersion": "0.9.174",
+  "distribution": "Public GitHub source with self-contained tests",
+  "quick": [
+    "hover-performance.mjs",
+    "sketch-hover.mjs",
+    "snap-cache.mjs",
+    "snap-spatial.mjs",
+    "snap-visibility-cache.mjs",
+    "history-sharing.mjs",
+    "triangulation-search.mjs",
+    "face-edit-preparation.mjs",
+    "presentation-lighting.mjs",
+    "manual-save.mjs",
+    "camera-views.mjs",
+    "explore-navigation.mjs",
+    "object-visibility.mjs",
+    "object-list.mjs",
+    "sidebar-help.mjs",
+    "tool-workflow.mjs",
+    "smoke.mjs",
+    "source-package.mjs",
+    "format-docs.mjs"
+  ],
+  "extended": [
+    "hover-performance.mjs",
+    "sketch-hover.mjs",
+    "snap-cache.mjs",
+    "snap-spatial.mjs",
+    "snap-visibility-cache.mjs",
+    "history-sharing.mjs",
+    "triangulation-search.mjs",
+    "face-edit-preparation.mjs",
+    "presentation-lighting.mjs",
+    "manual-save.mjs",
+    "camera-views.mjs",
+    "explore-navigation.mjs",
+    "object-visibility.mjs",
+    "object-list.mjs",
+    "sidebar-help.mjs",
+    "tool-workflow.mjs",
+    "smoke.mjs",
+    "source-package.mjs",
+    "format-docs.mjs",
+    "skp-import.mjs",
+    "skp-2017-import.mjs",
+    "skp-2013-import.mjs",
+    "skp-7-import.mjs",
+    "skp-2015-import.mjs",
+    "skp-legacy-budgets.mjs",
+    "open-surfaces.mjs",
+    "native-open.mjs",
+    "native-import.mjs",
+    "native-export.mjs",
+    "build-plates.mjs",
+    "texture-band.mjs",
+    "chamfer-angles.mjs",
+    "chamfer-multiple.mjs",
+    "rounded-chamfer-multiple.mjs",
+    "chamfer-extension.mjs",
+    "chamfer-connected.mjs",
+    "chamfer-shift-chains.mjs",
+    "chamfer-endpoints.mjs",
+    "chamfer-curved-supports.mjs",
+    "chamfer-short-edges.mjs",
+    "chamfer-junctions.mjs",
+    "png-export.mjs",
+    "render-shadows.mjs",
+    "object-lock.mjs",
+    "object-shininess.mjs",
+    "object-colors.mjs",
+    "object-color-performance.mjs",
+    "split-surface.mjs",
+    "split-surface-extension.mjs",
+    "split-plane-placement.mjs",
+    "project-capacity.mjs",
+    "object-selection.mjs",
+    "selection-filters.mjs",
+    "object-delete.mjs",
+    "primitives.mjs",
+    "sketch-editor.mjs",
+    "numeric-direction.mjs",
+    "move-grid.mjs",
+    "push-snap.mjs",
+    "snap-visibility-navigation.mjs",
+    "delete-options.mjs",
+    "taper-sweep.mjs",
+    "taper-profiles.mjs",
+    "taper-modes.mjs",
+    "ground-twist.mjs",
+    "mirror.mjs",
+    "multi-transform.mjs",
+    "rotate-plane.mjs",
+    "rotate-numeric-direction.mjs",
+    "rotation-display.mjs",
+    "multi-combine.mjs",
+    "object-subtract-split.mjs",
+    "group-subtract.mjs",
+    "subtract-selection-order.mjs",
+    "carve-out-insets.mjs",
+    "carve-out-contacts.mjs",
+    "carve-out-spatial.mjs",
+    "edge-feature-worker.mjs",
+    "twist-sweep.mjs",
+    "exchange.mjs",
+    "mesh-import.mjs",
+    "mesh-open-surfaces.mjs",
+    "obj-groups.mjs",
+    "import-capacity.mjs",
+    "face-text.mjs",
+    "curved-text.mjs",
+    "cylinder-text.mjs",
+    "round-text.mjs",
+    "round-text-seams.mjs",
+    "object-clipboard.mjs"
+  ],
+  "excludedSuites": [
+    {
+      "file": "skp-legacy-import.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "photo-ai.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "import-diagnostics.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "texture-diagnostics.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "texture-fragments.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "rebuild-planarity.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "texture-boundaries.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "point-move.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "edge-trim.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "point-delete.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "boolean-union.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "object-subtract.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "convex-subtract.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "stl-export-worker.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "merge-faces.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "stl-planar-merge.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "stl-cleanup.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "stl-contacts.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "stl-source-batches.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "stl-open-surfaces.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    },
+    {
+      "file": "core.mjs",
+      "reason": "Requires a user-supplied model or runtime/debug snapshot not included in this public distribution. The original suite remains intact in the private development project."
+    }
+  ],
+  "reviewedInputs": [
+    {
+      "path": "tests/fixtures/triangulation-bridged-reference.js",
+      "description": "Frozen project triangulation reference implementation for exact comparisons; code, not model data.",
+      "sha256": "9fea367bae14356e6850f69e02f96a702f2609599635b473d00ceb1421552ca3"
+    },
+    {
+      "path": "tests/fixtures/round-text-short-edge.json",
+      "description": "Synthetic canonical text-on-cone regression. Provenance is recorded in round-text-seams.md.",
+      "sha256": "0f524f1cdc00bd2263e2a22d6633f59fdeb27c513ac603fa4e0374f54b343e4c"
+    },
+    {
+      "path": "tests/fixtures/round-text-offset-corner.json",
+      "description": "Synthetic canonical text-on-sphere regression. Provenance is recorded in round-text-seams.md.",
+      "sha256": "5fad843c32b1b75793c45acca8bc7a047cc62ba352f2cf9e109caffed1e5b2fa"
+    },
+    {
+      "path": "examples/curved-split-surface.lamjacraft.json",
+      "description": "Reviewed synthetic 80 x 60 x 30 mm box and curved construction grid. Native Open format-8 test input.",
+      "sha256": "a990dda45bd6dcd1787c645f340cb76699bf59be06053b2b75226b3615d183e1"
+    },
+    {
+      "path": "examples/dense-split-surface.lamjacraft.json",
+      "description": "Reviewed synthetic 80 x 60 x 30 mm box and 30 x 30 construction grid. Capacity/split test input.",
+      "sha256": "88dd35464654182797d0296ed2105f326cac6cfed5eb2c7340ccc4685249cd70"
+    }
+  ]
+}

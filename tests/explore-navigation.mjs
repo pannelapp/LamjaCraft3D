@@ -1,0 +1,114 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {resolve} from 'node:path';
+import {createAppFixture} from './app-fixture.mjs';
+const root=resolve(import.meta.dirname,'..');
+const {sandbox,get,viewButtons}=createAppFixture(root);
+const run=code=>vm.runInContext(code,sandbox);
+const canvas=get('scene'),btn=get('exploreBtn'),doc=sandbox.document;
+const key=(code,name=code)=>({code,key:name,location:code==='ShiftLeft'?1:0,preventDefault(){this.prevented=true;}});
+const begin=()=>{btn.onclick();assert.equal(run('exploreRequestPending'),true);doc.pointerLockElement=canvas;run('explorePointerLockChanged()');assert.equal(run('exploreActive'),true);};
+canvas.requestPointerLock=()=>{};
+doc.exitPointerLock=()=>{doc.pointerLockElement=null;run('explorePointerLockChanged()');};
+assert.equal(run('exploreActive'),false);
+const history=run('undoStack.length'),originalDocument=run('JSON.stringify(projectData())');
+run('setTool("rect");setView("top");');
+begin();
+assert.equal(run('tool'),'select','flight must safely cancel unfinished tool');
+assert.equal(run('camera.orthographic'),false);
+assert.equal(btn.textContent,'Exit Explore');
+assert.ok(get('viewport').classList.contains('explore-active'));
+assert.ok(!get('exploreHud').classList.contains('hidden'));
+assert.deepEqual(viewButtons.filter(b=>b.classList.contains('active')).map(b=>b.dataset.view),['iso']);
+run('camera.pitch=.4');
+const cam=run('JSON.stringify(camera)');
+const stationaryEye=run('JSON.stringify(sceneCameraFrame(camera).eye)');sandbox.stationaryEye=stationaryEye;
+run('exploreMouseMove({movementX:100,movementY:25})');
+assert.ok(run('camera.yaw')<JSON.parse(cam).yaw,'rightward mouse must turn right');
+assert.ok(run('camera.pitch')>JSON.parse(cam).pitch,'downward mouse must pitch downward');
+assert.ok(run('V.len(V.sub(sceneCameraFrame(camera).eye,JSON.parse(stationaryEye)))')<1e-8,'mouse look must rotate in place, not orbit around the model');
+run('exploreMouseMove({movementX:0,movementY:-100000})');
+assert.ok(run('camera.pitch')>-Math.PI/2,'pitch must be clamped');
+run('exploreMouseMove({movementX:0,movementY:200000})');
+assert.ok(run('camera.pitch')<Math.PI/2,'pitch must be clamped');
+run('camera.yaw=0;camera.pitch=0;camera.target=[0,0,100];');
+// Flight is independent of wall-clock requestAnimationFrame scheduling.
+const press=(code,name=code)=>{sandbox.testKey=key(code,name);run('handleApplicationKeyDown(testKey)');assert.ok(sandbox.testKey.prevented);};
+const release=(code,name=code)=>{sandbox.testKey=key(code,name);run('exploreKeyUp(testKey)');};
+press('KeyW','w');run('exploreTick(0);exploreTick(50)');
+assert.ok(Math.abs(run('camera.target[0]+exploreSpeed*.05'))<1e-6,'W moves along camera forward');
+assert.equal(run('tool'),'select');
+release('KeyW','w');
+run('camera.target=[0,0,100]');
+press('KeyW','w');press('KeyD','d');run('exploreMove(.05)');
+const diagonal=run('V.len(V.sub(camera.target,[0,0,100]))');
+assert.ok(Math.abs(diagonal-run('exploreSpeed*.05'))<1e-6,'diagonal speed must be normalized');
+release('KeyW','w');release('KeyD','d');
+run('camera.target=[0,0,100]');press('Space',' ');run('exploreMove(.1)');
+assert.ok(run('camera.target[2]')>100,'Space must move vertically up');release('Space',' ');
+run('camera.target=[0,0,100]');press('ShiftLeft','Shift');run('exploreMove(.1)');
+assert.ok(run('camera.target[2]')<100,'left Shift must move vertically down');release('ShiftLeft','Shift');
+run('camera.target=[0,0,100]');press('KeyS','s');run('exploreMove(.1)');assert.ok(run('camera.target[0]')>0,'S must move backward');release('KeyS','s');
+run('camera.target=[0,0,100]');press('KeyA','a');run('exploreMove(.1)');assert.ok(run('camera.target[1]')<0,'A must move left');release('KeyA','a');
+
+// Adjustable flight speed must affect movement immediately, without modifying geometry.
+let speedHudTimeout=null,timeoutCancels=0;
+const existingSetTimeout=sandbox.setTimeout,existingClearTimeout=sandbox.clearTimeout;
+sandbox.setTimeout=(callback,delay)=>{if(delay===1800){speedHudTimeout=callback;return 781;}return existingSetTimeout(callback,delay);};
+sandbox.clearTimeout=(timer)=>{if(timer===781){timeoutCancels++;speedHudTimeout=null;}else existingClearTimeout(timer);};
+const initialSpeed=run('exploreSpeed');
+press('ArrowUp','ArrowUp');
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed*1.25)<1e-8,'up arrow increases speed 25%');
+assert.ok(!get('exploreSpeedHud').classList.contains('hidden'),'temporary speed label must appear');
+assert.match(get('exploreSpeedHud').textContent,/Fly speed: .* mm\/s/);
+assert.equal(typeof speedHudTimeout,'function','HUD fade timeout is scheduled');
+const hudBeforeMove=run('exploreSpeed');
+run('camera.target=[0,0,100]');press('KeyW','w');run('exploreMove(.1)');release('KeyW','w');
+assert.ok(Math.abs(run('V.len(V.sub(camera.target,[0,0,100]))')-hudBeforeMove*.1)<1e-8,'adjustment must change flying displacement');
+press('ArrowDown','ArrowDown');
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed)<1e-8,'down arrow reverses speed step');
+assert.ok(timeoutCancels>0,'new speed adjustment must reset HUD timeout');
+// Real wheel listener must adjust speed instead of invoking orbit-camera zoom.
+const wheel=deltaY=>{const e={deltaY,deltaMode:0,preventDefault(){this.prevented=true;}};canvas.listeners.wheel[0](e);assert.equal(e.prevented,true);};
+const originalCameraDistance=run('camera.distance');
+wheel(-100);
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed*1.25)<1e-8,'wheel up increases speed');
+wheel(100);
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed)<1e-8,'wheel down decreases speed');
+assert.equal(run('camera.distance'),originalCameraDistance,'wheel should not zoom the camera during Explore');
+// Pixel/line/page wheel deltas and trackpad fraction steps are normalized.
+run('exploreWheel({deltaY:-3,deltaMode:1,preventDefault(){}})');
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed*1.25)<1e-8,'line-mode wheel up works');
+run('exploreWheel({deltaY:1,deltaMode:2,preventDefault(){}})');
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed)<1e-8,'page-mode wheel down works');
+run('exploreWheel({deltaY:-50,deltaMode:0,preventDefault(){}})');
+assert.ok(run('exploreSpeed')>initialSpeed,'trackpad movement changes speed smoothly');
+run('exploreWheel({deltaY:50,deltaMode:0,preventDefault(){}})');
+assert.ok(Math.abs(run('exploreSpeed')-initialSpeed)<1e-8,'trackpad reverse restores speed');
+run('exploreSpeed=EXPLORE_POLICY.minimumSpeed');press('ArrowDown','ArrowDown');
+assert.equal(run('exploreSpeed'),run('EXPLORE_POLICY.minimumSpeed'),'lower speed limit honored');
+run('exploreSpeed=EXPLORE_POLICY.maximumSpeed');press('ArrowUp','ArrowUp');
+assert.equal(run('exploreSpeed'),run('EXPLORE_POLICY.maximumSpeed'),'upper speed limit honored');
+run('exploreSpeed=500');press('ArrowUp','ArrowUp');
+const timeoutToExpire=speedHudTimeout;
+assert.equal(typeof timeoutToExpire,'function');timeoutToExpire();
+assert.ok(get('exploreSpeedHud').classList.contains('hidden'),'HUD fades after temporary display');
+press('ArrowUp','ArrowUp');
+assert.ok(!get('exploreSpeedHud').classList.contains('hidden'));
+
+// A held movement key must not survive focus/pointer-lock loss.
+press('KeyW','w');doc.pointerLockElement=null;run('explorePointerLockChanged()');
+assert.equal(run('exploreActive'),false);assert.equal(run('exploreHeld.size'),0);assert.equal(btn.textContent,'Explore');
+assert.ok(get('exploreHud').classList.contains('hidden'));assert.ok(get('exploreSpeedHud').classList.contains('hidden'),'speed display hides on exit');assert.ok(!get('viewport').classList.contains('explore-active'));
+assert.equal(run('exploreWheel({deltaY:-100,deltaMode:0,preventDefault(){}})'),false,'normal wheel navigation is unaffected outside Explore');
+assert.equal(run('JSON.stringify(projectData())'),originalDocument,'flight must never change document data');
+assert.equal(run('undoStack.length'),history,'flight must never create history entries');
+// Escape must release pointer lock and reinstate application shortcut dispatch.
+begin();sandbox.testKey=key('Escape','Escape');run('handleApplicationKeyDown(testKey)');
+assert.equal(sandbox.testKey.prevented,true);assert.equal(run('exploreActive'),false);assert.equal(doc.pointerLockElement,null);
+// Denied pointer lock must preserve tools instead of entering navigation.
+run('setTool("rect")');canvas.requestPointerLock=()=>{throw Error('user denied');};btn.onclick();
+assert.equal(run('exploreActive'),false);assert.equal(run('exploreRequestPending'),false);assert.equal(run('tool'),'rect');
+// Standard navigation keys resume after leaving Explore.
+run('handleApplicationKeyDown({key:"v",code:"KeyV",preventDefault(){}})');assert.equal(run('tool'),'select');
+console.log('Explore navigation passed: pointer-lock lifecycle, mouse look, pitch clamps, WASD/Space/Left Shift movement, frame-independent speed, Escape and focus loss, failed permission, keyboard/wheel speed control, temporary speed HUD, limits and unchanged model/history.');
