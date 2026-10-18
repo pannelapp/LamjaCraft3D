@@ -1,0 +1,166 @@
+{
+  "format": "lamjacraft-3d",
+  "version": 7,
+  "units": "mm",
+  "name": "Native format sample",
+  "objects": [
+    {
+      "id": "o1",
+      "name": "10 mm cube",
+      "kind": "solid",
+      "color": "#b7cec9",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      },
+      "solid": {
+        "schema": "poly-brep-1",
+        "id": "s_o1",
+        "metadata": {},
+        "vertices": [
+          {
+            "id": "v1",
+            "position": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": "v2",
+            "position": [
+              10,
+              0,
+              0
+            ]
+          },
+          {
+            "id": "v3",
+            "position": [
+              10,
+              10,
+              0
+            ]
+          },
+          {
+            "id": "v4",
+            "position": [
+              0,
+              10,
+              0
+            ]
+          },
+          {
+            "id": "v5",
+            "position": [
+              0,
+              0,
+              10
+            ]
+          },
+          {
+            "id": "v6",
+            "position": [
+              10,
+              0,
+              10
+            ]
+          },
+          {
+            "id": "v7",
+            "position": [
+              10,
+              10,
+              10
+            ]
+          },
+          {
+            "id": "v8",
+            "position": [
+              0,
+              10,
+              10
+            ]
+          }
+        ],
+        "faces": [
+          {
+            "id": "f1",
+            "outer": [
+              "v1",
+              "v4",
+              "v3",
+              "v2"
+            ],
+            "holes": []
+          },
+          {
+            "id": "f2",
+            "outer": [
+              "v5",
+              "v6",
+              "v7",
+              "v8"
+            ],
+            "holes": []
+          },
+          {
+            "id": "f3",
+            "outer": [
+              "v1",
+              "v2",
+              "v6",
+              "v5"
+            ],
+            "holes": []
+          },
+          {
+            "id": "f4",
+            "outer": [
+              "v2",
+              "v3",
+              "v7",
+              "v6"
+            ],
+            "holes": []
+          },
+          {
+            "id": "f5",
+            "outer": [
+              "v3",
+              "v4",
+              "v8",
+              "v7"
+            ],
+            "holes": []
+          },
+          {
+            "id": "f6",
+            "outer": [
+              "v4",
+              "v1",
+              "v5",
+              "v8"
+            ],
+            "holes": []
+          }
+        ]
+      }
+    }
+  ],
+  "groups": [],
+  "construction": {
+    "guides": []
+  },
+  "annotations": {
+    "dimensions": []
+  }
+}

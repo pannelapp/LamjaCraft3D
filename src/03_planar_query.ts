@@ -1,0 +1,2 @@
+// Shared planar-face domain queries used by edge features, sketches, and sweep logic.
+function pointInsideFaceDomain(s:Solid,faceId:FaceId,p:Vec3):boolean {const f=s.faces.get(faceId)!;const loops=faceLoopPoints(s,faceId),b=planeBasis(f.plane,loops.outer[0]),q=toPlane2(p,b),outer=loops.outer.map(x=>toPlane2(x,b));if(!pointInPolygon2(q,outer)&&!outer.some((a,i)=>pointOnSegment2(q,a,outer[(i+1)%outer.length])))return false;for(const h3 of loops.holes){const h=h3.map(x=>toPlane2(x,b));if(pointInPolygon2(q,h))return false;}return true;}
